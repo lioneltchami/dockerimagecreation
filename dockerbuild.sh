@@ -36,7 +36,7 @@ read file
 echo -e "What name do you want to give to the folder which is going to be copy of this container on your system?\n"
 read vol
 
-echo -e "What port do you want to expose for the docker container that will be created?"
+echo -e "What port do you want to expose for the docker container that will be created? (numbers only please)"
 read port2
 
 echo -e "Do you want the container to run in a detached mode once it has been created? Or do you prefer for it to be attached? (please select *d* for detached and *t* for attached\n"

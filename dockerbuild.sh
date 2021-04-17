@@ -15,68 +15,109 @@ then
 apt-get install docker -y
 fi
 
-echo -e "What is your name please?"
+echo -e "What is your name please?\n"
 read name
 
-
-echo -e "\nWhat base image do you prefer? (centos, ubuntu, alpine)\n"
+echo -e "What base image do you prefer? (centos, ubuntu, alpine)\n"
 read base
 
-echo -e "what version do you want please? (latest)?\n"
-read v
+echo -e "What version do you want please? (latest)?\n"
+read ver
 
-echo -e "What name do you want to give to the folder which is going to be  copy of this container on your system?\n"
-read vol
-
-echo -e "Do you want to have a port exposed? Which one please?(numbers only please)\n"
-read p
-
-echo -e "What programs or applications do you want install? (vim, httpd, curl, wget, docker, finger? (please separate them with space)\n"
+echo -e "What applications do you want installed in the docker image? (vim, httpd, curl, wget, docker, finger? (If there are multiple, please separate them with spaces)\n"
 read app
 
-echo -e "What is the name of that file or directory you want to copy into the image? NB: Please make sure that you are running this script in                                                                                                                                                                                                                                                                                                                                 the same directory where that file or folder is found\n"
-read c
+echo -e "Do you want to have a port exposed? Which one please?(numbers only please)\n"
+read port
 
+echo -e "What is the name of the file or directory you want to copy into the image? NB: Please make sure that the script is in the same directory as the directory where that file or folder is found\n"
+read file
 
-if [ ${base} = centos ]
+echo -e "What name do you want to give to the folder which is going to be copy of this container on your system?\n"
+read vol
+
+echo -e "What port do you want to expose for the docker container that will be created?"
+read port2
+
+echo -e "Do you want the container to run in a detached mode once it has been created? Or do you prefer for it to be attached? (please select *d* for detached and *t* for attached\n"
+read mode
+
+if [ ${base} = centos ] -a [ ${mode} = d ]
 then
 sleep 3
-echo -e "Building a ${base} image, version ${v} with port ${p} opened and installing ${app}.\n"
+echo -e "Building a ${base} image, version ${ver} with port ${port} opened and installing ${app}.\n"
 sleep 3
-echo -e "FROM ${base}:${v}\nMAINTAINER ${name}\nRUN yum update -y\nRUN yum install ${app} -y\nRUN systemctl enable httpd\nRUN systemctl start                                                                                                                                                                                                                                                                                                                                 httpd\nCOPY ./${c} /var/www/html\nEXPOSE ${p}\nCMD apachectl -D FOREGROUND" > dockerfile
+echo -e "FROM ${base}:${ver}\nMAINTAINER ${name}\nRUN yum update -y\nRUN yum install ${app} -y\nRUN systemctl enable httpd\nRUN systemctl start httpd\nCOPY ./${file} /var/www/html\nEXPOSE ${port}\nCMD apachectl -D FOREGROUND" > dockerfile
+docker build -t ${name}/${base}-httpd:${ver} .
+docker push ${name}/${base}-httpd
+echo -e "Running container in a detached mode"
+docker run -idv ${v}:/var/www/html -p ${port2} ${name}/${base}-httpd bash
 fi
 
-if [ ${base} = alpine ]
+if [ ${base} = centos ] -a [ ${mode} = t ]
 then
 sleep 3
-echo -e "Building a ${base} image, version ${v} with port ${p} opened and installing ${app}.\n"
+echo -e "Building a ${base} image, version ${ver} with port ${port} opened and installing ${app}.\n"
 sleep 3
-echo -e "FROM ${base}:${v}\nMAINTAINER ${name}\nRUN apk update\nRUN apk add ${app}\nRUN systemctl enable httpd\nRUN systemctl start httpd\nCOP                                                                                                                                                                                                                                                                                                                                Y ./${c} /usr/local/apache2/htdocs\nEXPOSE ${p}\nCMD apachectl -D FOREGROUND" > dockerfile
+echo -e "FROM ${base}:${ver}\nMAINTAINER ${name}\nRUN yum update -y\nRUN yum install ${app} -y\nRUN systemctl enable httpd\nRUN systemctl start httpd\nCOPY ./${file} /var/www/html\nEXPOSE ${port}\nCMD apachectl -D FOREGROUND" > dockerfile
+docker build -t ${name}/${base}-httpd:${ver} .
+docker push ${name}/${base}-httpd
+echo -e "Running container in a detached mode"
+docker run -itv ${v}:/var/www/html -p ${port2} ${name}/${base}-httpd bash
 fi
 
-if [ ${base} = ubuntu ]
+if [ ${base} = alpine ] -a [ ${mode} = d ]
 then
 sleep 3
-echo -e "Building a ${base} image, version ${v} with port ${p} opened and installing ${app}.\n"
+echo -e "Building a ${base} image, version ${ver} with port ${port} opened and installing ${app}.\n"
 sleep 3
-echo -e "FROM ${base}:${v}\nMAINTAINER ${name}\nRUN apt-get update -y\nRUN apt-get install ${app} -y\nRUN systemctl enable httpd\nRUN systemct                                                                                                                                                                                                                                                                                                                                l start httpd\nCOPY ./${c} /usr/local/apache2/htdocs\nEXPOSE ${p}\nCMD apachectl -D FOREGROUND" > dockerfile
+echo -e "FROM ${base}:${ver}\nMAINTAINER ${name}\nRUN apk update\nRUN apk add ${app}\nRUN systemctl enable httpd\nRUN systemctl start httpd\nCOPY ./${file} /usr/local/apache2/htdocs\nEXPOSE ${port}\nCMD apachectl -D FOREGROUND" > dockerfile
+docker build -t ${name}/${base}-httpd:${ver} .
+docker push ${name}/${base}-httpd
+docker run -idv ${v}:/usr/local/apache2/htdocs -p ${port2} ${name}/${base}-httpd bash
+fi
+
+if [ ${base} = alpine ] -a [ ${mode} = t ]
+then
+sleep 3
+echo -e "Building a ${base} image, version ${ver} with port ${port} opened and installing ${app}.\n"
+sleep 3
+echo -e "FROM ${base}:${ver}\nMAINTAINER ${name}\nRUN apk update\nRUN apk add ${app}\nRUN systemctl enable httpd\nRUN systemctl start httpd\nCOPY ./${file} /usr/local/apache2/htdocs\nEXPOSE ${port}\nCMD apachectl -D FOREGROUND" > dockerfile
+docker build -t ${name}/${base}-httpd:${ver} .
+docker push ${name}/${base}-httpd
+docker run -itv ${v}:/usr/local/apache2/htdocs -p ${port2} ${name}/${base}-httpd bash
+fi
+
+if [ ${base} = ubuntu ] -a [ ${mode} = d ]
+then
+sleep 3
+echo -e "Building a ${base} image, version ${ver} with port ${port} opened and installing ${app}.\n"
+sleep 3
+echo -e "FROM ${base}:${ver}\nMAINTAINER ${name}\nRUN apt-get update -y\nRUN apt-get install ${app} -y\nRUN systemctl enable httpd\nRUN systemctl start httpd\nCOPY ./${file} /usr/local/apache2/htdocs\nEXPOSE ${port}\nCMD apachectl -D FOREGROUND" > dockerfile
+docker build -t ${name}/${base}-httpd:${ver} .
+docker push ${name}/${base}-httpd
+docker run -idv ${vol}:/usr/local/apache2/htdocs -p ${port2} ${name}/${base}-httpd bash
+fi
+
+if [ ${base} = ubuntu ] -a [ ${mode} = t ]
+then
+sleep 3
+echo -e "Building a ${base} image, version ${ver} with port ${port} opened and installing ${app}.\n"
+sleep 3
+echo -e "FROM ${base}:${ver}\nMAINTAINER ${name}\nRUN apt-get update -y\nRUN apt-get install ${app} -y\nRUN systemctl enable httpd\nRUN systemctl start httpd\nCOPY ./${file} /usr/local/apache2/htdocs\nEXPOSE ${port}\nCMD apachectl -D FOREGROUND" > dockerfile
+docker build -t ${name}/${base}-httpd:${ver} .
+docker push ${name}/${base}-httpd
+docker run -itv ${vol}:/usr/local/apache2/htdocs -p ${port2} ${name}/${base}-httpd bash
 fi
 
 #systemctl enable httpd
 #systemctl start httpd
 
-docker build -t ${name}/${base}-httpd .
-
-docker push ${name}/${base}-httpd
-
-docker run -itv ${v}:/var/www/html -p 97 ${name}/${base}-httpd bash
 
 if [ $? = 0 ]
 then
 echo "Successfully created"
 rm -rf dockerfile
-sleep 1
-echo "Yaaaaaaay a don chop beans"
 else
 echo "Docker image creation failed"
 fi
